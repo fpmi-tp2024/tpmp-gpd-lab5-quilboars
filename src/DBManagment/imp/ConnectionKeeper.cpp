@@ -1,5 +1,4 @@
 #include "../ConnectionKeeper.h"
-#include "sqlite3.h"
 #include <stdio.h>
 sqlite3* db;
 

@@ -1,6 +1,6 @@
 #include "../HorseRepository.h"
 #include <vector>
-#include "sqlite3.h"
+#include "../../sqlite/sqlite3.h"
 #include "../../DBManagment/ConnectionKeeper.h"
 #include <string.h>
 
