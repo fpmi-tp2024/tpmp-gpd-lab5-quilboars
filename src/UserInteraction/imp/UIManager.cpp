@@ -166,7 +166,7 @@ void InsertForAdmin()
 	while (choice != 0)
 	{
 		std::cout << "Menu:\n";
-		std::cout << "1 - Add race";
+		std::cout << "1 - Add race\n";
 		std::cout << "2 - Add new owner\n";
 		std::cout << "3 - Add new jockey\n";
 		std::cout << "0 - EXIT\n";
@@ -497,12 +497,12 @@ void GetInfoAndAddOwner()
 
 void GetInfoAndUpdateRace(int raceId)
 {
-	auto raceRecord = GetRaceRecordById(raceId);
+	auto race = GetRaceById(raceId);
 
 	std::cout << "Enter date:\n";
-	std::cin >> raceRecord.race->Date;
+	std::cin >> race.Date;
 
-	UpdateRace(*raceRecord.race);
+	UpdateRace(race);
 }
 
 void GetInfoAndAddRace()
