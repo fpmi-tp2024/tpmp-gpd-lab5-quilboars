@@ -110,6 +110,7 @@ bool ShowMenuForAdmin()
 		std::cout << "3 - DELETE RACE\n";
 		std::cout << "4 - UPDATE RACE\n";
 		std::cout << "5 - GIVE MONEY TO WINNERS\n";
+		std::cout << "6 - CREATE ADMIN\n";
 		std::cout << "0 - EXIT\n";
 
 		std::cin >> choice;
@@ -151,6 +152,9 @@ bool ShowMenuForAdmin()
 			GivePrize(money, id);
 			break;
 		}
+		case 6:
+			GetInfoAndAddAdmin();
+			break;
 		default:
 			break;
 		}
@@ -565,4 +569,20 @@ void GetInfoAndAddHorse()
 	std::cin >> horse.Price;
 
 	Add(horse);
+}
+
+void GetInfoAndAddAdmin()
+{
+	UserSession session;
+	std::string email, password;
+
+	std::cout << "Enter email:\n";
+	std::cin >> email;
+	std::cout << "Enter password:\n";
+	std::cin >> password;
+
+	if (RegisterNewUser(email, password, (Role)3, &session) != Result::NO_ERROR) {
+		std::cerr << "Registration error!\n";
+		return;
+	}
 }

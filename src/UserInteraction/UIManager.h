@@ -33,5 +33,6 @@ void GetInfoAndAddRace();
 void GetInfoAndAddRaceRecord();
 void GetInfoAndUpdateHorse(int horseId);
 void GetInfoAndAddHorse();
+void GetInfoAndAddAdmin();
 
 #endif

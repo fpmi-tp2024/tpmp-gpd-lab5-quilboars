@@ -30,9 +30,7 @@ UserSession Authorization() { //TODO: return result from SignIn/Reg
 			if (FAILED(Registration(&session))) {
 				cerr << "Registration failed. Try again." << endl;
 			} else {
-				if (session.role != _Admin) {
-					EnterAdditionalInfo(&session);
-				}			
+				EnterAdditionalInfo(&session);		
 				cout << "You have successfully registered." << endl;
 				break; 
 			}
@@ -48,15 +46,15 @@ Result Registration(OUT UserSession* session) {
 	bool done = false;
 	int role_input = 0;
 	char c = 0;
-	for (string line; cout << "Enter your role (Horse owner - 1, Jockey - 2, Admin - 3): " && getline(cin, line);) {
+	for (string line; cout << "Enter your role (Horse owner - 1, Jockey - 2): " && getline(cin, line);) {
 		istringstream iss(line);
 		if (iss >> role_input && (c = iss.get() && (c == '\0' || c == '\n'))) {
-			if (role_input == 1 || role_input == 2 || role_input == 3) {
+			if (role_input == 1 || role_input == 2) {
 				done = true;
 				break;
 			}
 		}
-		cout << "Please, enter 1, 2 or 3." << endl;
+		cout << "Please, enter 1, 2." << endl;
 	}
 	if (!done) { cerr << "Premature end of input.\n"; };
 
