@@ -5,6 +5,25 @@
 #include <string.h>
 #include<iostream>
 
+static int callback_Race(void* out_param, int argc, char** argv, char** azColName)
+{
+	Race* race = (Race*)out_param;
+
+	for (int i = 0; i < argc; i += 2)
+	{;
+		if (strcmp(azColName[i], "Id") == 0)
+		{
+			race->Id = strtol(argv[i], nullptr, 10);
+		}
+		if (strcmp(azColName[i + 1], "Date") == 0)
+		{
+			race->Date = strtol(argv[i + 1], nullptr, 10);
+		}
+	}
+
+	return 0;	
+}
+
 int AddRace(Race race)
 {
 	sqlite3* db = GetConnection();
@@ -107,4 +126,21 @@ int DeleteRace(int raceId)
 	if (rc == SQLITE_DONE)
 		rc = 0;
 	return rc;
+}
+
+Race GetRaceById(int raceId) {
+
+	sqlite3* db = GetConnection();
+
+	Race race;
+
+	char* zErrMsg = 0;
+
+	std::string query = "SELECT * FROM Race WHERE Id = ";
+
+	std::string query_append = query.append(std::to_string(raceId));
+
+	int rc = sqlite3_exec(db, query_append.c_str(), callback_Race, &race, &zErrMsg);
+
+	return race;
 }

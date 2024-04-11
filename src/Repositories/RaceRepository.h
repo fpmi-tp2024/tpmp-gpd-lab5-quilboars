@@ -9,4 +9,6 @@ int UpdateRace(Race race);
 
 int DeleteRace(int raceId);
 
+Race GetRaceById(int raceId);
+
 #endif

@@ -1,17 +1,7 @@
 #include "../auth_controller.h"
 #include "../security_manager.h"
 #include "../reg_info_manager.h"
-#include <iostream>
-#include <string>
-#include <sstream>
-#include <time.h>
 
-using namespace std;
-
-bool IsValidEmail(const string& email);
-string PromptPasswordRegistration();
-string PromptEmail(bool isCollisionAccepted, string fail_msg);
-Result EnterAdditionalInfo(UserSession* session);
 
 UserSession Authorization() { //TODO: return result from SignIn/Reg
 	UserSession session = { 0, (Role)0 };
@@ -29,8 +19,8 @@ UserSession Authorization() { //TODO: return result from SignIn/Reg
 		} else if (answer == "No") {
 			if (FAILED(Registration(&session))) {
 				cerr << "Registration failed. Try again." << endl;
-			} else { 
-				EnterAdditionalInfo(&session);
+			} else {
+				EnterAdditionalInfo(&session);		
 				cout << "You have successfully registered." << endl;
 				break; 
 			}
@@ -54,7 +44,7 @@ Result Registration(OUT UserSession* session) {
 				break;
 			}
 		}
-		cout << "Please, enter 1 or 2." << endl;
+		cout << "Please, enter 1, 2." << endl;
 	}
 	if (!done) { cerr << "Premature end of input.\n"; };
 
@@ -64,6 +54,7 @@ Result Registration(OUT UserSession* session) {
 
 	return RegisterNewUser(email, password, (Role)role_input, session);
 }
+
 
 Result SignIn(OUT UserSession* session) {
 	std::string email = PromptEmail(true, "There is no user with entered email.");
@@ -106,8 +97,8 @@ string PromptEmail(bool isCollisionAccepted, string fail_msg) {
 string PromptPasswordRegistration() {
 	string password;
 	while (true) { // Until user enters long enough password
-		cout << "Enter your password: ";
-		getline(cin, password);
+		cout << "Enter your password: \n";
+		cin >> password;
 		if (password.size() >= 8) {
 			break;
 		} else {
