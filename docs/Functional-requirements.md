@@ -8,18 +8,18 @@
 |Select best horse | Displays information about the horse that has the most amount of wins|
 |Select Owners' horses info| Returns information about all the horses of a specific owner|
 |Select most experienced jockey| Returns the jockey with the most experience|
-|Select personal info| Return the personal information about the user|
+|Select personal info| Return the personal information about the user including his name, birthday, email, address and (or) exprerience|
 |Insert horse| Inserts a horse into the system|
 |Insert race record| Inserts a race record into the system|
 |Insert owner| Inserts an owner into the system| 
 |Insert race| Inserts a race into the system |
 |Insert jockey| Inserts a race into the system |
-|Update jockey information| ////// |
-|Update race information| |
-|Update owner information| |
-|Update horse information| |
-|Delete race| |
-|Distribute prize| |
+|Update jockey information| Gives user the ability to update information about a jockey |
+|Update race information| Gives user the ability to update information about a race|
+|Update owner information| Gives user the ability to update information about an owner|
+|Update horse information| Gives user the ability to update information about a horse|
+|Delete race| Deletes a race from the system|
+|Distribute prize| An admin can distribute a prize between the winners in a race|
 
 # Text scenarios 
 ## User login
@@ -51,5 +51,7 @@ system displays an error message indicating that the email address is already in
 **4. Alternative path (Invalid data format):** <br/>
 &nbsp;&nbsp;&nbsp;&nbsp;a. If the user enters data in an incorrect format or violates any data constraints (e.g., entering non existing data, invalid data type), the system displays an error message.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;b. The user is prompted to correct the data format or values before redoing the operation.<br/>
+
+
 
 
