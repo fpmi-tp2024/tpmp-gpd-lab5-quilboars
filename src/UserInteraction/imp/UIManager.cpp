@@ -13,6 +13,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <optional>
 
 UserSession user;
 
@@ -325,7 +326,11 @@ void SelectForOwner()
 		case 3:
 		{
 			auto owner = GetOwnerByIdentityId(user.Id);
-			auto info1 = GetBestHorse(owner.Id);
+			Horse info1 = GetBestHorse(owner.Id);
+			if (info1.Id == -1) {
+				cout << "you have no horses\n";
+				break;
+			}
 			PrintHorseInfo(info1);
 			break;
 		}
@@ -333,6 +338,10 @@ void SelectForOwner()
 		{
 			auto owner = GetOwnerByIdentityId(user.Id);
 			auto info2 = GetHorsesByOwnerId(owner.Id);
+			if (info2.size() == 0) {
+				cout << "you have no horses\n";
+				break;
+			}
 			for (auto h : info2)
 			{
 				PrintHorseInfo(h);

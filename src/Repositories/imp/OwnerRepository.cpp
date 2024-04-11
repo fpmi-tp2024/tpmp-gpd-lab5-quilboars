@@ -3,7 +3,8 @@
 #include "../../DBManagment/ConnectionKeeper.h"
 #include <string>
 #include <string.h>
-#include<iostream>
+#include <iostream>
+#include <optional>
 
 std::vector<Horse> GetHorsesByOwnerId(int ownerId)
 {
@@ -69,7 +70,12 @@ std::vector<Horse> GetHorsesByOwnerId(int ownerId)
 
 Horse GetBestHorse(int OwnerId) {
 	auto horses = GetHorsesByOwnerId(OwnerId);
-	Horse answer = horses[0];
+	Horse answer;
+	if (horses.size() == 0) {
+		answer.Id = -1;
+		return answer;
+	}
+	answer = horses[0];
 
 	for(auto h : horses)
 	{

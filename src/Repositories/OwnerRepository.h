@@ -4,6 +4,7 @@
 #include <vector>
 #include "../Models/Horse.h"
 #include "../Models/Owner.h"
+#include <iostream>
 
 std::vector<Horse> GetHorsesByOwnerId(int OwnerId);
 

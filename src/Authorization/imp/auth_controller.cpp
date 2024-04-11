@@ -97,7 +97,7 @@ string PromptEmail(bool isCollisionAccepted, string fail_msg) {
 string PromptPasswordRegistration() {
 	string password;
 	while (true) { // Until user enters long enough password
-		cout << "Enter your password: \n";
+		cout << "Enter your password: ";
 		cin >> password;
 		if (password.size() >= 8) {
 			break;
@@ -133,7 +133,7 @@ Result EnterAdditionalInfo(UserSession* session) {
 
 	string name;
 	cout << "Enter your name: ";
-	getline(cin, name);
+	cin >> name;
 
 	int yearOfBirth = 0;
 	auto t = time(0);
@@ -141,7 +141,7 @@ Result EnterAdditionalInfo(UserSession* session) {
 
 	bool done = false;
 	char c = 0;
-	for (string line; cout << "Enter your year of birth: " && getline(cin, line);) {
+	for (string line; cout << "Enter your year of birth: " && cin >> line;) {
 		istringstream iss(line);
 		if (iss >> yearOfBirth && (c = iss.get() && (c == '\0' || c == '\n'))) {
 			if (yearOfBirth > 1900 && yearOfBirth <= tm.tm_year + 1900) {
@@ -155,7 +155,7 @@ Result EnterAdditionalInfo(UserSession* session) {
 
 	string address;
 	cout << "Enter your address: ";
-	getline(cin, address);
+	cin >> address;
 
 	switch (session->role) {
 	case _Jockey: {
