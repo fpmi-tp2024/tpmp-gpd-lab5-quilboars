@@ -1,47 +1,8 @@
 #include "../JockeyRepository.h"
-#include "sqlite3.h"
+#include "../../sqlite/sqlite3.h"
 #include "../../DBManagment/ConnectionKeeper.h"
 #include <string.h>
-
-static int callback_Jockey(void* out_param, int argc, char** argv, char** azColName)
-{
-	Jockey* out_jockey = (Jockey*)out_param;
-	if (argc == 0) 
-	{
-		out_jockey = nullptr;
-		return 0;
-	}
-
-	for (int i = 0; i < argc; i += 6)
-	{
-		if (strcmp(azColName[i], "Id") == 0)
-		{
-			out_jockey->Id = strtol(argv[i], nullptr, 10);
-		}
-		if (strcmp(azColName[i + 1], "Name") == 0)
-		{
-			out_jockey->Name = std::string(argv[i + 1]);
-		}
-		if (strcmp(azColName[i + 2], "Experience") == 0)
-		{
-			out_jockey->Experience = strtod(argv[i + 2], nullptr);
-		}
-		if (strcmp(azColName[i + 3], "YearOfBirth") == 0)
-		{
-			out_jockey->YearOfBirth = strtol(argv[i + 3], nullptr, 10);
-		}
-		if (strcmp(azColName[i + 4], "Address") == 0)
-		{
-			out_jockey->Address = std::string(argv[i + 4]);
-		}
-		if (strcmp(azColName[i + 5], "IdentityId") == 0)
-		{
-			out_jockey->IdentityId = strtol(argv[i + 5], nullptr, 10);
-		}
-	}
-
-	return 0;
-}
+#include<iostream>
 
 static int callback_JockeyResult(void* out_param, int argc, char** argv, char** azColName)
 {
@@ -98,78 +59,147 @@ JockeyExperince GetBestJockey()
 
 Jockey GetJockeyInfo(int jockeyId) 
 {
-	Jockey jockey;
-	std::string query = "SELECT * FROM Jockey AS j WHERE j.Id = ";
+    Jockey jockey;
+    std::string query = "SELECT * FROM Jockey AS j WHERE j.Id = ?";
 
-	std::string query_appended = query.append(std::to_string(jockeyId));
+    sqlite3* db = GetConnection();
 
-	sqlite3* db = GetConnection();
+    sqlite3_stmt* stmt;
+    int rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+    if (rc != SQLITE_OK)
+    {
+        std::cerr << "Error preparing SELECT statement for Jockey: " << sqlite3_errmsg(db) << std::endl;
+        return jockey;
+    }
 
-	char* zErrMsg = 0;
+    sqlite3_bind_int(stmt, 1, jockeyId);
 
-	int rc = sqlite3_exec(db, query_appended.c_str(), callback_Jockey, &jockey, &zErrMsg);
+	rc = sqlite3_step(stmt);
+	while (rc == SQLITE_ROW)
+	{
 
-	return jockey;
+		jockey.Id = sqlite3_column_int(stmt, 0);
+		jockey.Name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+		jockey.Experience = sqlite3_column_double(stmt, 2);
+		jockey.YearOfBirth = sqlite3_column_int(stmt, 3);
+		jockey.Address = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4));
+		jockey.IdentityId = sqlite3_column_int(stmt, 5);
+
+		rc = sqlite3_step(stmt);
+	}
+
+	if (rc != SQLITE_DONE)
+	{
+		std::cerr << "Error executing SELECT statement: " << sqlite3_errmsg(db) << std::endl;
+	}
+
+    sqlite3_finalize(stmt);
+
+    return jockey;
 }
 
-int Update(Jockey jockey) 
+int Update( Jockey jockey)
 {
-	std::string query = "UPDATE Jockey SET Name = '";
-
-	std::string query_appended = query
-		.append(jockey.Name)
-		.append("', ")
-		.append("Experience = ")
-		.append(std::to_string(jockey.Experience))
-		.append(", YearOfBirth = ")
-		.append(std::to_string(jockey.YearOfBirth))
-		.append(", Address = '")
-		.append(jockey.Address)
-		.append("' WHERE Id = ")
-		.append(std::to_string(jockey.Id));
+	std::string query = "UPDATE Jockey SET Name = ?, Experience = ?, YearOfBirth = ?, Address = ? WHERE Id = ?";
 
 	sqlite3* db = GetConnection();
 
-	char* zErrMsg = 0;
+	sqlite3_stmt* stmt;
+	int rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+	if (rc != SQLITE_OK)
+	{
+		std::cerr << "Error preparing UPDATE statement for Jockey: " << sqlite3_errmsg(db) << std::endl;
+		return rc;
+	}
 
-	int rc = sqlite3_exec(db, query_appended.c_str(), nullptr, 0, &zErrMsg);
+	sqlite3_bind_text(stmt, 1, jockey.Name.c_str(), -1, SQLITE_TRANSIENT);
+	sqlite3_bind_double(stmt, 2, jockey.Experience);
+	sqlite3_bind_int(stmt, 3, jockey.YearOfBirth);
+	sqlite3_bind_text(stmt, 4, jockey.Address.c_str(), -1, SQLITE_TRANSIENT);
+	sqlite3_bind_int(stmt, 5, jockey.Id);
 
+	rc = sqlite3_step(stmt);
+	if (rc != SQLITE_DONE)
+	{
+		std::cerr << "Error executing UPDATE statement for Jockey: " << sqlite3_errmsg(db) << std::endl;
+	}
+
+	sqlite3_finalize(stmt);
+	if (rc == SQLITE_DONE)
+		rc = 0;
 	return rc;
 }
 
-Jockey GetJockeyByIdentityId(int identityId) 
+Jockey GetJockeyByIdentityId(int identityId)
 {
 	Jockey j;
-	std::string query = "SELECT * FROM Jockey WHERE Jockey.IdentityId =";
+	std::string query = "SELECT * FROM Jockey WHERE Jockey.IdentityId = ?";
 
 	sqlite3* db = GetConnection();
 
-	char* zErrMsg = 0;
+	sqlite3_stmt* stmt;
+	int rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+	if (rc != SQLITE_OK)
+	{
+		std::cerr << "Error preparing SELECT statement for Jockey: " << sqlite3_errmsg(db) << std::endl;
+		return j;
+	}
 
-	int rc = sqlite3_exec(db, query.append(std::to_string(identityId)).c_str(), callback_Jockey, &j, &zErrMsg);
+	sqlite3_bind_int(stmt, 1, identityId);
+
+	rc = sqlite3_step(stmt);
+
+	while (rc == SQLITE_ROW)
+	{
+		j.Id = sqlite3_column_int(stmt, 0);
+		j.Name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+		j.Experience = sqlite3_column_double(stmt, 2);
+		j.YearOfBirth = sqlite3_column_int(stmt, 3);
+		j.Address = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4));
+		j.IdentityId = sqlite3_column_int(stmt, 5);
+
+		rc = sqlite3_step(stmt);
+	}
+
+	if (rc != SQLITE_DONE)
+	{
+		std::cerr << "Error executing SELECT statement: " << sqlite3_errmsg(db) << std::endl;
+	}
+
+	sqlite3_finalize(stmt);
 
 	return j;
 }
 
-int AddJockey(Jockey jockey) 
+int AddJockey(Jockey jockey)
 {
 	sqlite3* db = GetConnection();
 
-	std::string command = "INSERT INTO Jockey (Name, YearOfBirth, Address, IdentityId, Experience) VALUES ('";
-	std::string appended_command = command
-		.append(jockey.Name)
-		.append("', ")
-		.append(std::to_string(jockey.YearOfBirth))
-		.append(", '")
-		.append(jockey.Address)
-		.append("', ")
-		.append(std::to_string(jockey.IdentityId))
-		.append(", ")
-		.append(std::to_string(jockey.Experience))
-		.append(")");
+	std::string query = "INSERT INTO Jockey (Name, YearOfBirth, Address, IdentityId, Experience) VALUES (?, ?, ?, ?, ?)";
 
-	char* zErrMsg = 0;
+	sqlite3_stmt* stmt;
+	int rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+	if (rc != SQLITE_OK)
+	{
+		std::cerr << "Error preparing INSERT statement for Jockey: " << sqlite3_errmsg(db) << std::endl;
+		return rc;
+	}
 
-	int rc = sqlite3_exec(db, appended_command.c_str(), nullptr, 0, &zErrMsg);
+	sqlite3_bind_text(stmt, 1, jockey.Name.c_str(), -1, SQLITE_TRANSIENT);
+	sqlite3_bind_int(stmt, 2, jockey.YearOfBirth);
+	sqlite3_bind_text(stmt, 3, jockey.Address.c_str(), -1, SQLITE_TRANSIENT);
+	sqlite3_bind_int(stmt, 4, jockey.IdentityId);
+	sqlite3_bind_double(stmt, 5, jockey.Experience);
+
+	rc = sqlite3_step(stmt);
+	if (rc != SQLITE_DONE)
+	{
+		std::cerr << "Error executing INSERT statement for Jockey: " << sqlite3_errmsg(db) << std::endl;
+	}
+
+	sqlite3_finalize(stmt);
+	if (rc == SQLITE_DONE)
+		rc = 0;
+
 	return rc;
 }

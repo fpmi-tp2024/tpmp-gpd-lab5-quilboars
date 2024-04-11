@@ -222,7 +222,7 @@ void UpdateForOwner()
 	while (choice != 0)
 	{
 		std::cout << "Menu:\n";
-		std::cout << "1 - Update horse";
+		std::cout << "1 - Update horse\n";
 		std::cout << "2 - Update your info\n";
 		std::cout << "0 - EXIT\n";
 
@@ -456,7 +456,7 @@ void GetInfoAndAddJockey()
 
 void GetInfoAndUpdateOwner(int ownerId)
 {
-	Owner owner = GetOwnerByIdentityId(ownerId);
+	Owner owner = GetOwnerInfo(ownerId);
 
 	std::cout << "Enter name:\n";
 	std::cin >> owner.Name;

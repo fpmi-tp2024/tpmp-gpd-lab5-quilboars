@@ -1,56 +1,80 @@
 #include "../UserRepository.h"
-#include "sqlite3.h"
+#include "../../sqlite/sqlite3.h"
 #include "../../DBManagment/ConnectionKeeper.h"
 #include <stdlib.h>
 #include <string>
 #include <string.h>
-
-static int callback(void* out_param, int argc, char** argv, char** azColName) 
-{
-	std::vector<User>* out_user = (std::vector<User>*)out_param;
-	
-	for (int i = 0; i < argc; i+=4) 
-	{
-		User user;
-		if (strcmp(azColName[i], "Id") == 0) 
-		{
-			user.Id = strtol(argv[i], nullptr, 10);
-		}
-		if (strcmp(azColName[i + 1], "Email") == 0) 
-		{
-			user.Email = std::string(argv[i + 1]);
-		}
-		if (strcmp(azColName[i + 2], "PasswordSigned") == 0)
-		{
-			user.PasswordSigned = std::string(argv[i + 2]);
-		}
-		if (strcmp(azColName[i + 3], "Role") == 0)
-		{
-			user.role = (Role)strtol(argv[i + 3], nullptr, 10);
-		}
-		out_user->push_back(user);
-	}
-	
-	return 0;
-}
+#include<iostream>
 
 std::vector<User> TryGetUserByLogin(std::string login)
 {
-	std::vector<User> vectorOfUsers;
-	sqlite3* db = GetConnection();
-	char* zErrMsg = 0;
-	std::string query_string = "SELECT * FROM User WHERE User.Email = '";
-	const char* query = query_string.append(login).append("'").c_str();
-	int rc = sqlite3_exec(db, query, callback, &vectorOfUsers, &zErrMsg);
-	return vectorOfUsers;
+    std::vector<User> vectorOfUsers;
+    sqlite3* db = GetConnection();
+
+    std::string query = "SELECT * FROM User WHERE User.Email = ?";
+
+    sqlite3_stmt* stmt;
+    int rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+    if (rc != SQLITE_OK)
+    {
+        std::cerr << "Error preparing SELECT statement: " << sqlite3_errmsg(db) << std::endl;
+        return vectorOfUsers;
+    }
+
+    sqlite3_bind_text(stmt, 1, login.c_str(), -1, SQLITE_TRANSIENT);
+
+    rc = sqlite3_step(stmt);
+    while (rc == SQLITE_ROW)
+    {
+        User user;
+
+        user.Id = sqlite3_column_int(stmt, 0);
+        user.Email = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+        user.PasswordSigned = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
+        user.role = static_cast<Role>(sqlite3_column_int(stmt, 3));
+
+        vectorOfUsers.push_back(user);
+
+        rc = sqlite3_step(stmt);
+    }
+
+    if (rc != SQLITE_DONE)
+    {
+        std::cerr << "Error executing SELECT statement: " << sqlite3_errmsg(db) << std::endl;
+    }
+
+    sqlite3_finalize(stmt);
+
+    return vectorOfUsers;
 }
 
 int AddUser(User* user)
 {
-	sqlite3* db = GetConnection();
-	char* zErrMsg = 0;
-	std::string query_string = "INSERT INTO User (Email, PasswordSigned, Role) VALUES ('";
-	const char* query = query_string.append(user->Email).append("','").append(user->PasswordSigned).append("',").append(std::to_string(user->role)).append(")").c_str();
-	int rc = sqlite3_exec(db, query, nullptr, 0, &zErrMsg);
-	return rc;
+    sqlite3* db = GetConnection();
+
+    std::string query = "INSERT INTO User (Email, PasswordSigned, Role) VALUES (?, ?, ?)";
+
+    sqlite3_stmt* stmt;
+    int rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+    if (rc != SQLITE_OK)
+    {
+        std::cerr << "Error preparing INSERT statement: " << sqlite3_errmsg(db) << std::endl;
+        return rc;
+    }
+
+    sqlite3_bind_text(stmt, 1, user->Email.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, user->PasswordSigned.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 3, static_cast<int>(user->role));
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE)
+    {
+        std::cerr << "Error executing INSERT statement: " << sqlite3_errmsg(db) << std::endl;
+    }
+
+    sqlite3_finalize(stmt);
+    if (rc == SQLITE_DONE)
+        rc = 0;
+
+    return rc;
 }
