@@ -8,11 +8,11 @@ Jockeys are part of the hippodrome staff. The system gives users the ability to 
 with an email and password as one of the following: owner, jockey, admin.
 
 # Wiki links
-- [Glossary](https://github.com/fpmi-tp2024/tpmp-gpd-lab5-quilboars/wiki/Glossary)
-- [Functional Requirements](https://github.com/fpmi-tp2024/tpmp-gpd-lab5-quilboars/wiki/Functional-requirements)
-- [Project Specification](https://github.com/fpmi-tp2024/tpmp-gpd-lab5-quilboars/wiki/Project-specification)
-- [Additional Specification](https://github.com/fpmi-tp2024/tpmp-gpd-lab5-quilboars/wiki/Additional-specification)
-- [Database scheme](https://github.com/fpmi-tp2024/tpmp-gpd-lab5-quilboars/wiki/Database-scheme)
+- [Glossary](https://fpmi-tp2024.github.io/tpmp-gpd-lab5-quilboars/glossary)
+- [Functional Requirements](https://fpmi-tp2024.github.io/tpmp-gpd-lab5-quilboars/Functional-requirements)
+- [Project Specification](https://fpmi-tp2024.github.io/tpmp-gpd-lab5-quilboars/Project-specification)
+- [Additional Specification](https://fpmi-tp2024.github.io/tpmp-gpd-lab5-quilboars/Additional-specification)
+- [Database scheme](https://fpmi-tp2024.github.io/tpmp-gpd-lab5-quilboars/Database-scheme)
 # Github Pages
 
 # Contributing:
