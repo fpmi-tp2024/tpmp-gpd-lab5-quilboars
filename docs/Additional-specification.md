@@ -12,7 +12,7 @@
 - Database operations, including reading and writing data, are be optimized for performance.
 
 #### Security
-- User passwords are securely hashed using a strong cryptographic algorithm
+- User passwords are securely hashed using a strong cryptographic algorithm.
 - Access to sensitive user data is restricted based on user roles and permissions.
 - Proper error handling mechanisms are implemented to prevent information leakage and unauthorized access attempts.
 
