@@ -1,17 +1,7 @@
 #include "../auth_controller.h"
 #include "../security_manager.h"
 #include "../reg_info_manager.h"
-#include <iostream>
-#include <string>
-#include <sstream>
-#include <time.h>
 
-using namespace std;
-
-bool IsValidEmail(const string& email);
-string PromptPasswordRegistration();
-string PromptEmail(bool isCollisionAccepted, string fail_msg);
-Result EnterAdditionalInfo(UserSession* session);
 
 UserSession Authorization() { //TODO: return result from SignIn/Reg
 	UserSession session = { 0, (Role)0 };
@@ -107,8 +97,8 @@ string PromptEmail(bool isCollisionAccepted, string fail_msg) {
 string PromptPasswordRegistration() {
 	string password;
 	while (true) { // Until user enters long enough password
-		cout << "Enter your password: ";
-		getline(cin, password);
+		cout << "Enter your password: \n";
+		cin >> password;
 		if (password.size() >= 8) {
 			break;
 		} else {

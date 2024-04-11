@@ -9,6 +9,7 @@
 #include "../../Repositories/PrizeRepository.h"
 #include "../../Models/Authorization/Role.h"
 #include "../../Authorization/security_manager.h"
+#include "../../Authorization/auth_controller.h"
 #include <iostream>
 #include <vector>
 #include <string>
@@ -437,8 +438,7 @@ void GetInfoAndAddJockey()
 
 	std::cout << "Enter email:\n";
 	std::cin >> email;
-	std::cout << "Enter password:\n";
-	std::cin >> password;
+	password = PromptPasswordRegistration();
 
 	if (RegisterNewUser(email, password, (Role)2, &session) != Result::NO_ERROR) {
 		std::cerr << "Registration error!\n";
@@ -480,10 +480,9 @@ void GetInfoAndAddOwner()
 
 	std::cout << "Enter email:\n";
 	std::cin >> email;
-	std::cout << "Enter password:\n";
-	std::cin >> password;
+	password = PromptPasswordRegistration();
 
-	if (RegisterNewUser(email, password, (Role)2, &session) != Result::NO_ERROR) {
+	if (RegisterNewUser(email, password, (Role)1, &session) != Result::NO_ERROR) {
 		std::cerr << "Registration error!\n";
 		return;
 	}
@@ -578,8 +577,7 @@ void GetInfoAndAddAdmin()
 
 	std::cout << "Enter email:\n";
 	std::cin >> email;
-	std::cout << "Enter password:\n";
-	std::cin >> password;
+	password = PromptPasswordRegistration();
 
 	if (RegisterNewUser(email, password, (Role)3, &session) != Result::NO_ERROR) {
 		std::cerr << "Registration error!\n";
