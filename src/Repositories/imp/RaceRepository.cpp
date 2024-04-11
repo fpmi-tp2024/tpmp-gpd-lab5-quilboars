@@ -85,7 +85,7 @@ int DeleteRace(int raceId)
 	}
 
 	sqlite3_finalize(stmt);
-	sqlite3_reset(stmt);
+
 	query = "DELETE FROM Race WHERE Race.Id = ?";
 
 	rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
