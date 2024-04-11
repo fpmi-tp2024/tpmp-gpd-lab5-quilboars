@@ -13,7 +13,6 @@ with an email and password as one of the following: owner, jockey, admin.
 - [Project Specification](https://fpmi-tp2024.github.io/tpmp-gpd-lab5-quilboars/Project-specification)
 - [Additional Specification](https://fpmi-tp2024.github.io/tpmp-gpd-lab5-quilboars/Additional-specification)
 - [Database scheme](https://fpmi-tp2024.github.io/tpmp-gpd-lab5-quilboars/Database-scheme)
-# Github Pages
 
 # Contributing:
 
