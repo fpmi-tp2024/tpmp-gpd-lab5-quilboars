@@ -6,58 +6,72 @@
 #include <algorithm>
 #include <vector>
 #include <string.h>
+#include<iostream>
 
 bool ResultComparer(RaceRecord a, RaceRecord b) 
 {
 	return a.Result < b.Result;
 }
 
-int GivePrize(double money, int raceId) 
+int GivePrize(double money, int raceId)
 {
-	std::vector<RaceRecord> records = GetByRaceId(raceId);
+    std::vector<RaceRecord> records = GetByRaceId(raceId);
 
-	if (records.size() < 3) 
-	{
-		return -1;
-	}
+    if (records.size() < 3)
+    {
+        return -1;
+    }
 
-	std::sort(records.begin(), records.end(), ResultComparer);
+    std::sort(records.begin(), records.end(), ResultComparer);
 
+    sqlite3* db = GetConnection();
 
-	sqlite3* db = GetConnection();
+    std::string query = "INSERT INTO Prize (Prize, RaceRecordId) VALUES (?, ?)";
 
-	char* zErrMsg = 0;
+    sqlite3_stmt* stmt;
+    int rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+    if (rc != SQLITE_OK)
+    {
+        std::cerr << "Error preparing INSERT statement for Prize: " << sqlite3_errmsg(db) << std::endl;
+        return rc;
+    }
 
-	std::string str1 = "INSERT INTO Prize (Prize, RaceRecordId) VALUES (";
+    sqlite3_bind_double(stmt, 1, money * 0.5);
+    sqlite3_bind_int(stmt, 2, records[0].Id);
 
-	std::string str1_appended = str1
-		.append(std::to_string(money * 0.5))
-		.append(", ")
-		.append(std::to_string(records[0].Id))
-		.append("); ");
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE)
+    {
+        std::cerr << "Error executing INSERT statement for Prize (1st place): " << sqlite3_errmsg(db) << std::endl;
+        sqlite3_finalize(stmt);
+        return rc;
+    }
+    sqlite3_reset(stmt);
 
-	std::string str2 = "INSERT INTO Prize (Prize, RaceRecordId) VALUES (";
+    sqlite3_bind_double(stmt, 1, money * 0.3);
+    sqlite3_bind_int(stmt, 2, records[1].Id);
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE)
+    {
+        std::cerr << "Error executing INSERT statement for Prize (2nd place): " << sqlite3_errmsg(db) << std::endl;
+        sqlite3_finalize(stmt);
+        return rc;
+    }
+    sqlite3_reset(stmt);
 
-	std::string str2_appended = str2
-		.append(std::to_string(money * 0.3))
-		.append(", ")
-		.append(std::to_string(records[1].Id))
-		.append("); ");
+    sqlite3_bind_double(stmt, 1, money * 0.2);
+    sqlite3_bind_int(stmt, 2, records[2].Id);
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE)
+    {
+        std::cerr << "Error executing INSERT statement for Prize (3rd place): " << sqlite3_errmsg(db) << std::endl;
+        sqlite3_finalize(stmt);
+        return rc;
+    }
 
-	std::string str3 = "INSERT INTO Prize (Prize, RaceRecordId) VALUES (";
+    sqlite3_finalize(stmt);
 
-
-	std::string str3_appended = str3
-		.append(std::to_string(money * 0.2))
-		.append(", ")
-		.append(std::to_string(records[2].Id))
-		.append("); ");
-
-	std::string command = str1_appended.append(str2_appended).append(str3_appended);
-
-	int rc = sqlite3_exec(db, command.c_str(), nullptr, 0, &zErrMsg);
-
-	return rc;
+    return SQLITE_OK;
 }
 
 static int callback(void* out_param, int argc, char** argv, char** azColName)
@@ -84,7 +98,6 @@ static int callback(void* out_param, int argc, char** argv, char** azColName)
 
 	return 0;
 }
-
 
 std::vector<Prize> GetAll()
 {
