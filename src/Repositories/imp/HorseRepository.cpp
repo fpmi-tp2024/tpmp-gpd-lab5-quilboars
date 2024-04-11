@@ -145,7 +145,7 @@ int Update(Horse horse)
 		return -1;
 	}
 
-	query = "UPDATE Horse SET Nickname = ?, Age = ?, Price = ?, OwnerId = ? WHERE Id = ?";
+	query = "UPDATE Horse SET Nickname = ?, Age = ?, Experience = ?, Price = ?, OwnerId = ? WHERE Id = ?";
 
 	rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
 	if (rc != SQLITE_OK)
@@ -156,9 +156,10 @@ int Update(Horse horse)
 
 	sqlite3_bind_text(stmt, 1, horse.Nickname.c_str(), -1, SQLITE_TRANSIENT);
 	sqlite3_bind_int(stmt, 2, horse.Age);
-	sqlite3_bind_double(stmt, 3, horse.Price);
-	sqlite3_bind_int(stmt, 4, horse.OwnerId);
-	sqlite3_bind_int(stmt, 5, horse.Id);
+	sqlite3_bind_double(stmt, 3, horse.Experience);
+	sqlite3_bind_double(stmt, 4, horse.Price);
+	sqlite3_bind_int(stmt, 5, horse.OwnerId);
+	sqlite3_bind_int(stmt, 6, horse.Id);
 
 	rc = sqlite3_step(stmt);
 	if (rc != SQLITE_DONE)
