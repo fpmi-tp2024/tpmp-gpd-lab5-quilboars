@@ -78,7 +78,7 @@ int Add(Horse horse)
 		std::cerr << "Owner not found: " << horse.OwnerId << std::endl;
 		return -1;
 	}
-	sqlite3_reset(stmt);
+
 	query = "INSERT INTO Horse (Nickname, Age, Experience, Price, OwnerId) VALUES (?, ?, ?, ?, ?)";
 
 	rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
@@ -144,7 +144,7 @@ int Update(Horse horse)
 		std::cerr << "Owner not found: " << horse.OwnerId << std::endl;
 		return -1;
 	}
-	sqlite3_reset(stmt);
+
 	query = "UPDATE Horse SET Nickname = ?, Age = ?, Price = ?, OwnerId = ? WHERE Id = ?";
 
 	rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
@@ -198,7 +198,7 @@ int DeleteHorse(int horseId)
 	}
 
 	sqlite3_finalize(stmt);
-	sqlite3_reset(stmt);
+
 	query = "DELETE FROM Horse WHERE Horse.Id = ?";
 
 	rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
