@@ -1,17 +1,7 @@
 #include "../auth_controller.h"
 #include "../security_manager.h"
 #include "../reg_info_manager.h"
-#include <iostream>
-#include <string>
-#include <sstream>
-#include <time.h>
 
-using namespace std;
-
-bool IsValidEmail(const string& email);
-string PromptPasswordRegistration();
-string PromptEmail(bool isCollisionAccepted, string fail_msg);
-Result EnterAdditionalInfo(UserSession* session);
 
 UserSession Authorization() { //TODO: return result from SignIn/Reg
 	UserSession session = { 0, (Role)0 };
@@ -29,8 +19,8 @@ UserSession Authorization() { //TODO: return result from SignIn/Reg
 		} else if (answer == "No") {
 			if (FAILED(Registration(&session))) {
 				cerr << "Registration failed. Try again." << endl;
-			} else { 
-				EnterAdditionalInfo(&session);
+			} else {
+				EnterAdditionalInfo(&session);		
 				cout << "You have successfully registered." << endl;
 				break; 
 			}
@@ -54,7 +44,7 @@ Result Registration(OUT UserSession* session) {
 				break;
 			}
 		}
-		cout << "Please, enter 1 or 2." << endl;
+		cout << "Please, enter 1, 2." << endl;
 	}
 	if (!done) { cerr << "Premature end of input.\n"; };
 
@@ -64,6 +54,7 @@ Result Registration(OUT UserSession* session) {
 
 	return RegisterNewUser(email, password, (Role)role_input, session);
 }
+
 
 Result SignIn(OUT UserSession* session) {
 	std::string email = PromptEmail(true, "There is no user with entered email.");
@@ -107,7 +98,7 @@ string PromptPasswordRegistration() {
 	string password;
 	while (true) { // Until user enters long enough password
 		cout << "Enter your password: ";
-		getline(cin, password);
+		cin >> password;
 		if (password.size() >= 8) {
 			break;
 		} else {
@@ -142,7 +133,7 @@ Result EnterAdditionalInfo(UserSession* session) {
 
 	string name;
 	cout << "Enter your name: ";
-	getline(cin, name);
+	cin >> name;
 
 	int yearOfBirth = 0;
 	auto t = time(0);
@@ -150,7 +141,7 @@ Result EnterAdditionalInfo(UserSession* session) {
 
 	bool done = false;
 	char c = 0;
-	for (string line; cout << "Enter your year of birth: " && getline(cin, line);) {
+	for (string line; cout << "Enter your year of birth: " && cin >> line;) {
 		istringstream iss(line);
 		if (iss >> yearOfBirth && (c = iss.get() && (c == '\0' || c == '\n'))) {
 			if (yearOfBirth > 1900 && yearOfBirth <= tm.tm_year + 1900) {
@@ -164,7 +155,7 @@ Result EnterAdditionalInfo(UserSession* session) {
 
 	string address;
 	cout << "Enter your address: ";
-	getline(cin, address);
+	cin >> address;
 
 	switch (session->role) {
 	case _Jockey: {

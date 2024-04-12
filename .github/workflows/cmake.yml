@@ -2,7 +2,10 @@ name: CMake
 
 on:
   push:
-    branches: [ main, github_actions ]
+    branches:
+    - main
+    - bugfix
+    
   pull_request:
     branches: [ main, github_actions ]
 

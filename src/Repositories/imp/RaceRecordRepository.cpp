@@ -1,121 +1,10 @@
 #include "../RaceRecordRepository.h"
-#include "sqlite3.h"
+#include "../../sqlite/sqlite3.h"
 #include "../../DBManagment/ConnectionKeeper.h"
 #include <string.h>
+#include<iostream>
 
-static int callback_RaceRecords(void* out_param, int argc, char** argv, char** azColName)
-{
-	std::vector<RaceRecord>* out_vector = (std::vector<RaceRecord>*)out_param;
-
-	for (int i = 0; i < argc; i += 21)
-	{
-		RaceRecord rr;
-		if (strcmp(azColName[i], "Id") == 0)
-		{
-			rr.Id = strtol(argv[i], nullptr, 10);
-		}
-		if (strcmp(azColName[i + 1], "Result") == 0)
-		{
-			rr.Result = strtol(argv[i + 1], nullptr, 10);
-		}
-		if (strcmp(azColName[i + 2], "RaceId") == 0)
-		{
-			rr.RaceId = strtol(argv[i + 2], nullptr, 10);
-		}
-		if (strcmp(azColName[i + 3], "JockeyId") == 0)
-		{
-			rr.JockeyId = strtol(argv[i + 3], nullptr, 10);
-		}
-		if (strcmp(azColName[i + 4], "HorseId") == 0)
-		{
-			rr.horse = new Horse;
-			rr.HorseId = strtol(argv[i + 4], nullptr, 10);
-			rr.horse->Id = rr.HorseId;
-		}
-		if (strcmp(azColName[i + 5], "Date") == 0)
-		{
-			rr.race = new Race;
-			rr.race->Id = rr.RaceId;
-			rr.race->Date = std::string(argv[i + 5]);
-		}
-		if (strcmp(azColName[i + 6], "Name") == 0)
-		{
-			rr.jockey = new Jockey;
-			rr.jockey->Name = std::string(argv[i + 6]);
-		}
-		if (strcmp(azColName[i + 7], "Experience") == 0)
-		{
-			rr.jockey->Experience = strtod(argv[i + 7], nullptr);
-		}
-		if (strcmp(azColName[i + 8], "YearOfBirth") == 0)
-		{
-			rr.jockey->YearOfBirth = strtol(argv[i + 8], nullptr, 10);
-		}
-		if (strcmp(azColName[i + 9], "Address") == 0)
-		{
-			rr.jockey->Address = std::string(argv[i + 9]);
-		}
-		if (strcmp(azColName[i + 10], "IdentityId") == 0)
-		{
-			rr.jockey->IdentityId = strtol(argv[i + 10], nullptr, 10);
-			rr.jockey->Identity = nullptr;
-		}
-		if (strcmp(azColName[i + 11], "Id") == 0)
-		{
-			rr.jockey->Id = strtol(argv[i + 11], nullptr, 10);
-			rr.JockeyId = rr.jockey->Id;
-		}
-		if (strcmp(azColName[i + 12], "Nickname") == 0)
-		{
-			rr.horse->Nickname = std::string(argv[i + 12]);
-		}
-		if (strcmp(azColName[i + 13], "Age") == 0)
-		{
-			rr.horse->Age = strtol(argv[i + 13], nullptr, 10);
-		}
-		if (strcmp(azColName[i + 14], "Experience") == 0)
-		{
-			rr.horse->Experience = strtod(argv[i + 14], nullptr);
-		}
-		if (strcmp(azColName[i + 15], "Price") == 0)
-		{
-			rr.horse->Price = strtod(argv[i + 15], nullptr);
-		}
-
-		if (strcmp(azColName[i + 16], "Id") == 0)
-		{
-			rr.horse->owner = new Owner;
-			rr.horse->owner->Id = strtod(argv[i + 16], nullptr);
-			rr.horse->OwnerId = rr.horse->owner->Id;
-		}
-
-		if (strcmp(azColName[i + 17], "Name") == 0)
-		{
-			rr.horse->owner->Name = std::string(argv[i + 17]);
-		}
-
-		if (strcmp(azColName[i + 18], "YearOfBirth") == 0)
-		{
-			rr.horse->owner->YearOfBirth = strtol(argv[i + 18], nullptr, 10);
-		}
-
-		if (strcmp(azColName[i + 19], "Address") == 0)
-		{
-			rr.horse->owner->Address = std::string(argv[i + 19]);
-		}
-
-		if (strcmp(azColName[i + 20], "IdentityId") == 0)
-		{
-			rr.horse->owner->IdentityId = strtol(argv[i + 20], nullptr, 10);
-		}
-
-		out_vector->push_back(rr);
-	}
-
-	return 0;	
-}
-
-std::string AllIncludedQuery() 
+std::string AllIncludedQuery()
 {
 	return "SELECT \
 				rr.Id, \
@@ -148,32 +37,69 @@ std::string AllIncludedQuery()
 
 }
 
-static int callback_count(void* out_param, int argc, char** argv, char** azColName)
-{
-	int* out_count = (int*)out_param;
-
-	for (int i = 0; i < argc; i += 1)
-	{
-		if (strcmp(azColName[i], "Count") == 0)
-		{
-			*out_count = (int)strtol(argv[i], nullptr, 10);
-		}
-	}
-
-	return 0;
-}
-
-std::vector<RaceRecord> GetJockeyRecords(int JockeyId)
+std::vector<RaceRecord> GetJockeyRecords(int jockeyId)
 {
 	std::vector<RaceRecord> records;
+	std::string query = AllIncludedQuery() + " WHERE rr.JockeyId = ?";
 
 	sqlite3* db = GetConnection();
 
-	char* zErrMsg = 0;
+	sqlite3_stmt* stmt;
+	int rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+	if (rc != SQLITE_OK)
+	{
+		std::cerr << "Error preparing SELECT statement for RaceRecords: " << sqlite3_errmsg(db) << std::endl;
+		return records;
+	}
 
-	std::string query_string_appended = AllIncludedQuery().append("WHERE rr.JockeyId = ").append(std::to_string(JockeyId));
+	sqlite3_bind_int(stmt, 1, jockeyId);
 
-	int rc = sqlite3_exec(db, query_string_appended.c_str(), callback_RaceRecords, &records, &zErrMsg);
+	rc = sqlite3_step(stmt);
+
+	while (rc == SQLITE_ROW)
+	{
+		RaceRecord rr;
+		rr.Id = sqlite3_column_int(stmt, 0);
+		rr.Result = sqlite3_column_int(stmt, 1);
+		rr.RaceId = sqlite3_column_int(stmt, 2);
+		rr.JockeyId = sqlite3_column_int(stmt, 3);
+		rr.horse = new Horse;
+		rr.HorseId = sqlite3_column_int(stmt, 4);
+		rr.horse->Id = rr.HorseId;
+		rr.race = new Race;
+		rr.race->Id = rr.RaceId;
+		rr.race->Date = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 5));
+		rr.jockey = new Jockey;
+		rr.jockey->Name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 6));
+		rr.jockey->Experience = sqlite3_column_double(stmt, 7);
+		rr.jockey->YearOfBirth = sqlite3_column_int(stmt, 8);
+		rr.jockey->Address = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 9));
+		rr.jockey->IdentityId = sqlite3_column_int(stmt, 10);
+		rr.jockey->Identity = nullptr;
+		rr.jockey->Id = sqlite3_column_int(stmt, 11);
+		rr.JockeyId = rr.jockey->Id;
+		rr.horse->Nickname = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 12));
+		rr.horse->Age = sqlite3_column_int(stmt, 13);
+		rr.horse->Experience = sqlite3_column_double(stmt, 14);
+		rr.horse->Price = sqlite3_column_double(stmt, 15);
+		rr.horse->owner = new Owner;
+		rr.horse->owner->Id = sqlite3_column_int(stmt, 16);
+		rr.horse->OwnerId = rr.horse->owner->Id;
+		rr.horse->owner->Name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 17));
+		rr.horse->owner->YearOfBirth = sqlite3_column_int(stmt, 18);
+		rr.horse->owner->Address = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 19));
+		rr.horse->owner->IdentityId = sqlite3_column_int(stmt, 20);
+
+		records.push_back(rr);
+		rc = sqlite3_step(stmt);
+	}
+
+	if (rc != SQLITE_DONE)
+	{
+		std::cerr << "Error executing SELECT statement: " << sqlite3_errmsg(db) << std::endl;
+	}
+
+	sqlite3_finalize(stmt);
 
 	return records;
 }
@@ -181,14 +107,66 @@ std::vector<RaceRecord> GetJockeyRecords(int JockeyId)
 std::vector<RaceRecord> GetByHorseId(int horseId)
 {
 	std::vector<RaceRecord> records;
+	std::string query = AllIncludedQuery() + " WHERE h.Id = ?";
 
 	sqlite3* db = GetConnection();
 
-	char* zErrMsg = 0;
+	sqlite3_stmt* stmt;
+	int rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+	if (rc != SQLITE_OK)
+	{
+		std::cerr << "Error preparing SELECT statement for RaceRecords: " << sqlite3_errmsg(db) << std::endl;
+		return records;
+	}
 
-	std::string query_string_appended = AllIncludedQuery().append("WHERE h.Id = ").append(std::to_string(horseId));
+	sqlite3_bind_int(stmt, 1, horseId);
 
-	int rc = sqlite3_exec(db, query_string_appended.c_str(), callback_RaceRecords, &records, &zErrMsg);
+	rc = sqlite3_step(stmt);
+
+	while (rc == SQLITE_ROW)
+	{
+		RaceRecord rr;
+		rr.Id = sqlite3_column_int(stmt, 0);
+		rr.Result = sqlite3_column_int(stmt, 1);
+		rr.RaceId = sqlite3_column_int(stmt, 2);
+		rr.JockeyId = sqlite3_column_int(stmt, 3);
+		rr.horse = new Horse;
+		rr.HorseId = sqlite3_column_int(stmt, 4);
+		rr.horse->Id = rr.HorseId;
+		rr.race = new Race;
+		rr.race->Id = rr.RaceId;
+		rr.race->Date = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 5));
+		rr.jockey = new Jockey;
+		rr.jockey->Name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 6));
+		rr.jockey->Experience = sqlite3_column_double(stmt, 7);
+		rr.jockey->YearOfBirth = sqlite3_column_int(stmt, 8);
+		rr.jockey->Address = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 9));
+		rr.jockey->IdentityId = sqlite3_column_int(stmt, 10);
+		rr.jockey->Identity = nullptr;
+		rr.jockey->Id = sqlite3_column_int(stmt, 11);
+		rr.JockeyId = rr.jockey->Id;
+		rr.horse->Nickname = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 12));
+		rr.horse->Age = sqlite3_column_int(stmt, 13);
+		rr.horse->Experience = sqlite3_column_double(stmt, 14);
+		rr.horse->Price = sqlite3_column_double(stmt, 15);
+		rr.horse->owner = new Owner;
+		rr.horse->owner->Id = sqlite3_column_int(stmt, 16);
+		rr.horse->OwnerId = rr.horse->owner->Id;
+		rr.horse->owner->Name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 17));
+		rr.horse->owner->YearOfBirth = sqlite3_column_int(stmt, 18);
+		rr.horse->owner->Address = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 19));
+		rr.horse->owner->IdentityId = sqlite3_column_int(stmt, 20);
+
+		records.push_back(rr);
+		rc = sqlite3_step(stmt);
+	}
+
+	if (rc != SQLITE_DONE)
+	{
+		std::cerr << "Error executing SELECT statement: " << sqlite3_errmsg(db) << std::endl;
+	}
+
+	sqlite3_finalize(stmt);
 
 	return records;
 }
@@ -196,14 +174,67 @@ std::vector<RaceRecord> GetByHorseId(int horseId)
 std::vector<RaceRecord> GetByPeriod(std::string from, std::string to)
 {
 	std::vector<RaceRecord> records;
+	std::string query = AllIncludedQuery() + " WHERE r.Date >= ? AND r.Date <= ?";
 
 	sqlite3* db = GetConnection();
 
-	char* zErrMsg = 0;
+	sqlite3_stmt* stmt;
+	int rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+	if (rc != SQLITE_OK)
+	{
+		std::cerr << "Error preparing SELECT statement for RaceRecords: " << sqlite3_errmsg(db) << std::endl;
+		return records;
+	}
 
-	std::string query_string_appended = AllIncludedQuery().append("WHERE r.Date > '").append(from).append("' AND r.Date < '").append(to).append("'");
+	sqlite3_bind_text(stmt, 1, from.c_str(), -1, SQLITE_STATIC);
+	sqlite3_bind_text(stmt, 2, to.c_str(), -1, SQLITE_STATIC);
 
-	int rc = sqlite3_exec(db, query_string_appended.c_str(), callback_RaceRecords, &records, &zErrMsg);
+	rc = sqlite3_step(stmt);
+
+	while (rc == SQLITE_ROW)
+	{
+		RaceRecord rr;
+		rr.Id = sqlite3_column_int(stmt, 0);
+		rr.Result = sqlite3_column_int(stmt, 1);
+		rr.RaceId = sqlite3_column_int(stmt, 2);
+		rr.JockeyId = sqlite3_column_int(stmt, 3);
+		rr.horse = new Horse;
+		rr.HorseId = sqlite3_column_int(stmt, 4);
+		rr.horse->Id = rr.HorseId;
+		rr.race = new Race;
+		rr.race->Id = rr.RaceId;
+		rr.race->Date = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 5));
+		rr.jockey = new Jockey;
+		rr.jockey->Name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 6));
+		rr.jockey->Experience = sqlite3_column_double(stmt, 7);
+		rr.jockey->YearOfBirth = sqlite3_column_int(stmt, 8);
+		rr.jockey->Address = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 9));
+		rr.jockey->IdentityId = sqlite3_column_int(stmt, 10);
+		rr.jockey->Identity = nullptr;
+		rr.jockey->Id = sqlite3_column_int(stmt, 11);
+		rr.JockeyId = rr.jockey->Id;
+		rr.horse->Nickname = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 12));
+		rr.horse->Age = sqlite3_column_int(stmt, 13);
+		rr.horse->Experience = sqlite3_column_double(stmt, 14);
+		rr.horse->Price = sqlite3_column_double(stmt, 15);
+		rr.horse->owner = new Owner;
+		rr.horse->owner->Id = sqlite3_column_int(stmt, 16);
+		rr.horse->OwnerId = rr.horse->owner->Id;
+		rr.horse->owner->Name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 17));
+		rr.horse->owner->YearOfBirth = sqlite3_column_int(stmt, 18);
+		rr.horse->owner->Address = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 19));
+		rr.horse->owner->IdentityId = sqlite3_column_int(stmt, 20);
+
+		records.push_back(rr);
+		rc = sqlite3_step(stmt);
+	}
+
+	if (rc != SQLITE_DONE)
+	{
+		std::cerr << "Error executing SELECT statement: " << sqlite3_errmsg(db) << std::endl;
+	}
+
+	sqlite3_finalize(stmt);
 
 	return records;
 }
@@ -212,79 +243,275 @@ int AddRaceRecord(RaceRecord raceRecord)
 {
 	sqlite3* db = GetConnection();
 
-	char* zErrMsg = 0;
-
 	int isPresent = 0;
+	{
+		std::string query = "SELECT Count(Horse.Id) AS Count FROM Horse WHERE Horse.Id = ?";
+		sqlite3_stmt* stmt;
+		int rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+		if (rc != SQLITE_OK)
+		{
+			std::cerr << "Error preparing SELECT statement for Horse: " << sqlite3_errmsg(db) << std::endl;
+			return -1;
+		}
 
-	std::string query = "SELECT Count(Horse.Id) AS Count FROM Horse WHERE Horse.Id = ";
+		sqlite3_bind_int(stmt, 1, raceRecord.HorseId);
 
-	int rc1 = sqlite3_exec(db, query.append(std::to_string(raceRecord.HorseId)).c_str(), callback_count, &isPresent, &zErrMsg);
+		rc = sqlite3_step(stmt);
+
+		while (rc == SQLITE_ROW)
+		{
+			isPresent = sqlite3_column_int(stmt, 0);
+
+			rc = sqlite3_step(stmt);
+		}
+
+		if (rc != SQLITE_DONE)
+		{
+			std::cerr << "Error executing SELECT statement: " << sqlite3_errmsg(db) << std::endl;
+		}
+
+
+		sqlite3_finalize(stmt);
+	}
 
 	if (isPresent == 0)
 	{
 		return -1;
 	}
 
-	query = "SELECT Count(Jockey.Id) AS Count FROM Jockey WHERE Jockey.Id = ";
+	{
+		std::string query = "SELECT Count(Jockey.Id) AS Count FROM Jockey WHERE Jockey.Id = ?";
+		sqlite3_stmt* stmt;
+		int rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+		if (rc != SQLITE_OK)
+		{
+			std::cerr << "Error preparing SELECT statement for Jockey: " << sqlite3_errmsg(db) << std::endl;
+			return -1;
+		}
 
-	int rc2 = sqlite3_exec(db, query.append(std::to_string(raceRecord.JockeyId)).c_str(), callback_count, &isPresent, &zErrMsg);
+		sqlite3_bind_int(stmt, 1, raceRecord.JockeyId);
+		rc = sqlite3_step(stmt);
+
+		while (rc == SQLITE_ROW)
+		{
+			isPresent = sqlite3_column_int(stmt, 0);
+
+			rc = sqlite3_step(stmt);
+		}
+
+		if (rc != SQLITE_DONE)
+		{
+			std::cerr << "Error executing SELECT statement: " << sqlite3_errmsg(db) << std::endl;
+		}
+
+		sqlite3_finalize(stmt);
+	}
 
 	if (isPresent == 0)
 	{
 		return -1;
 	}
 
-	query = "SELECT Count(Race.Id) AS Count FROM Race WHERE Race.Id = ";
+	{
+		std::string query = "SELECT Count(Race.Id) AS Count FROM Race WHERE Race.Id = ?";
+		sqlite3_stmt* stmt;
+		int rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+		if (rc != SQLITE_OK)
+		{
+			std::cerr << "Error preparing SELECT statement for Race: " << sqlite3_errmsg(db) << std::endl;
+			return -1;
+		}
 
-	int rc3 = sqlite3_exec(db, query.append(std::to_string(raceRecord.RaceId)).c_str(), callback_count, &isPresent, &zErrMsg);
+		sqlite3_bind_int(stmt, 1, raceRecord.RaceId);
+		rc = sqlite3_step(stmt);
+
+		while (rc == SQLITE_ROW)
+		{
+			isPresent = sqlite3_column_int(stmt, 0);
+
+			rc = sqlite3_step(stmt);
+		}
+
+		if (rc != SQLITE_DONE)
+		{
+			std::cerr << "Error executing SELECT statement: " << sqlite3_errmsg(db) << std::endl;
+		}
+
+		sqlite3_finalize(stmt);
+	}
 
 	if (isPresent == 0)
 	{
 		return -1;
 	}
 
-	query = "INSERT INTO RaceRecord (Result, RaceId, HorseId, JockeyId) VALUES (";
+	std::string query = "INSERT INTO RaceRecord (Result, RaceId, HorseId, JockeyId) VALUES (?, ?, ?, ?)";
+	sqlite3_stmt* stmt;
+	int rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+	if (rc != SQLITE_OK)
+	{
+		std::cerr << "Error preparing INSERT statement for RaceRecord: " << sqlite3_errmsg(db) << std::endl;
+		return -1;
+	}
 
-	std::string query_appended = query
-		.append(std::to_string(raceRecord.Result))
-		.append(", '")
-		.append(std::to_string(raceRecord.RaceId))
-		.append("', '")
-		.append(std::to_string(raceRecord.HorseId))
-		.append("', '")
-		.append(std::to_string(raceRecord.JockeyId))
-		.append("')");
+	sqlite3_bind_int(stmt, 1, raceRecord.Result);
+	sqlite3_bind_int(stmt, 2, raceRecord.RaceId);
+	sqlite3_bind_int(stmt, 3, raceRecord.HorseId);
+	sqlite3_bind_int(stmt, 4, raceRecord.JockeyId);
 
-	int rc4 = sqlite3_exec(db, query_appended.c_str(), nullptr, 0, &zErrMsg);
-	return rc4;
+	rc = sqlite3_step(stmt);
+
+	if (rc != SQLITE_DONE)
+	{
+		std::cerr << "Error executing INSERT statement for RaceRecord: " << sqlite3_errmsg(db) << std::endl;
+		sqlite3_finalize(stmt);
+		return -1;
+	}
+
+	sqlite3_finalize(stmt);
+	if (rc == SQLITE_DONE)
+		rc = 0;
+	return rc;
 }
 
-RaceRecord GetRaceRecordById(int raceRecordId) 
+RaceRecord GetRaceRecordById(int raceRecordId)
 {
 	std::vector<RaceRecord> records;
+	std::string query = AllIncludedQuery() + " WHERE rr.Id = ?";
 
 	sqlite3* db = GetConnection();
 
-	char* zErrMsg = 0;
+	sqlite3_stmt* stmt;
+	int rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+	if (rc != SQLITE_OK)
+	{
+		std::cerr << "Error preparing SELECT statement for RaceRecords: " << sqlite3_errmsg(db) << std::endl;
+		return RaceRecord();
+	}
 
-	std::string query_string_appended = AllIncludedQuery().append("WHERE rr.Id = ").append(std::to_string(raceRecordId));
+	sqlite3_bind_int(stmt, 1, raceRecordId);
 
-	int rc = sqlite3_exec(db, query_string_appended.c_str(), callback_RaceRecords, &records, &zErrMsg);
+	rc = sqlite3_step(stmt);
 
-	return records[0];
+	while (rc == SQLITE_ROW)
+	{
+		RaceRecord rr;
+		rr.Id = sqlite3_column_int(stmt, 0);
+		rr.Result = sqlite3_column_int(stmt, 1);
+		rr.RaceId = sqlite3_column_int(stmt, 2);
+		rr.JockeyId = sqlite3_column_int(stmt, 3);
+		rr.horse = new Horse;
+		rr.HorseId = sqlite3_column_int(stmt, 4);
+		rr.horse->Id = rr.HorseId;
+		rr.race = new Race;
+		rr.race->Id = rr.RaceId;
+		rr.race->Date = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 5));
+		rr.jockey = new Jockey;
+		rr.jockey->Name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 6));
+		rr.jockey->Experience = sqlite3_column_double(stmt, 7);
+		rr.jockey->YearOfBirth = sqlite3_column_int(stmt, 8);
+		rr.jockey->Address = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 9));
+		rr.jockey->IdentityId = sqlite3_column_int(stmt, 10);
+		rr.jockey->Identity = nullptr;
+		rr.jockey->Id = sqlite3_column_int(stmt, 11);
+		rr.JockeyId = rr.jockey->Id;
+		rr.horse->Nickname = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 12));
+		rr.horse->Age = sqlite3_column_int(stmt, 13);
+		rr.horse->Experience = sqlite3_column_double(stmt, 14);
+		rr.horse->Price = sqlite3_column_double(stmt, 15);
+		rr.horse->owner = new Owner;
+		rr.horse->owner->Id = sqlite3_column_int(stmt, 16);
+		rr.horse->OwnerId = rr.horse->owner->Id;
+		rr.horse->owner->Name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 17));
+		rr.horse->owner->YearOfBirth = sqlite3_column_int(stmt, 18);
+		rr.horse->owner->Address = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 19));
+		rr.horse->owner->IdentityId = sqlite3_column_int(stmt, 20);
+
+		records.push_back(rr);
+		rc = sqlite3_step(stmt);
+	}
+
+	if (rc != SQLITE_DONE)
+	{
+		std::cerr << "Error executing SELECT statement: " << sqlite3_errmsg(db) << std::endl;
+	}
+
+	sqlite3_finalize(stmt);
+
+	if (records.empty())
+	{
+		std::cerr << "Error in the Repositories/RaceRecordRepository.cpp in GetRaceRecordById function" << std::endl;
+		return RaceRecord();
+	}
+	else
+	{
+		return records[0];
+	}
 }
 
-std::vector<RaceRecord> GetByRaceId(int raceId) 
+std::vector<RaceRecord> GetByRaceId(int raceId)
 {
 	std::vector<RaceRecord> records;
+	std::string query = AllIncludedQuery() + " WHERE rr.RaceId = ?";
 
 	sqlite3* db = GetConnection();
 
-	char* zErrMsg = 0;
+	sqlite3_stmt* stmt;
+	int rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+	if (rc != SQLITE_OK)
+	{
+		std::cerr << "Error preparing SELECT statement for RaceRecords: " << sqlite3_errmsg(db) << std::endl;
+		return records;
+	}
 
-	std::string query_string_appended = AllIncludedQuery().append("WHERE rr.RaceId = ").append(std::to_string(raceId));
+	sqlite3_bind_int(stmt, 1, raceId);
 
-	int rc = sqlite3_exec(db, query_string_appended.c_str(), callback_RaceRecords, &records, &zErrMsg);
+	rc = sqlite3_step(stmt);
+
+	while (rc == SQLITE_ROW)
+	{
+		RaceRecord rr;
+		rr.Id = sqlite3_column_int(stmt, 0);
+		rr.Result = sqlite3_column_int(stmt, 1);
+		rr.RaceId = sqlite3_column_int(stmt, 2);
+		rr.JockeyId = sqlite3_column_int(stmt, 3);
+		rr.horse = new Horse;
+		rr.HorseId = sqlite3_column_int(stmt, 4);
+		rr.horse->Id = rr.HorseId;
+		rr.race = new Race;
+		rr.race->Id = rr.RaceId;
+		rr.race->Date = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 5));
+		rr.jockey = new Jockey;
+		rr.jockey->Name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 6));
+		rr.jockey->Experience = sqlite3_column_double(stmt, 7);
+		rr.jockey->YearOfBirth = sqlite3_column_int(stmt, 8);
+		rr.jockey->Address = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 9));
+		rr.jockey->IdentityId = sqlite3_column_int(stmt, 10);
+		rr.jockey->Identity = nullptr;
+		rr.jockey->Id = sqlite3_column_int(stmt, 11);
+		rr.JockeyId = rr.jockey->Id;
+		rr.horse->Nickname = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 12));
+		rr.horse->Age = sqlite3_column_int(stmt, 13);
+		rr.horse->Experience = sqlite3_column_double(stmt, 14);
+		rr.horse->Price = sqlite3_column_double(stmt, 15);
+		rr.horse->owner = new Owner;
+		rr.horse->owner->Id = sqlite3_column_int(stmt, 16);
+		rr.horse->OwnerId = rr.horse->owner->Id;
+		rr.horse->owner->Name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 17));
+		rr.horse->owner->YearOfBirth = sqlite3_column_int(stmt, 18);
+		rr.horse->owner->Address = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 19));
+		rr.horse->owner->IdentityId = sqlite3_column_int(stmt, 20);
+
+		records.push_back(rr);
+		rc = sqlite3_step(stmt);
+	}
+
+	if (rc != SQLITE_DONE)
+	{
+		std::cerr << "Error executing SELECT statement: " << sqlite3_errmsg(db) << std::endl;
+	}
+
+	sqlite3_finalize(stmt);
 
 	return records;
 }

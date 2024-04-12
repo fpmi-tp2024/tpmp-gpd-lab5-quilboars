@@ -9,9 +9,11 @@
 #include "../../Repositories/PrizeRepository.h"
 #include "../../Models/Authorization/Role.h"
 #include "../../Authorization/security_manager.h"
+#include "../../Authorization/auth_controller.h"
 #include <iostream>
 #include <vector>
 #include <string>
+#include <optional>
 
 UserSession user;
 
@@ -110,6 +112,7 @@ bool ShowMenuForAdmin()
 		std::cout << "3 - DELETE RACE\n";
 		std::cout << "4 - UPDATE RACE\n";
 		std::cout << "5 - GIVE MONEY TO WINNERS\n";
+		std::cout << "6 - CREATE ADMIN\n";
 		std::cout << "0 - EXIT\n";
 
 		std::cin >> choice;
@@ -151,6 +154,9 @@ bool ShowMenuForAdmin()
 			GivePrize(money, id);
 			break;
 		}
+		case 6:
+			GetInfoAndAddAdmin();
+			break;
 		default:
 			break;
 		}
@@ -166,7 +172,7 @@ void InsertForAdmin()
 	while (choice != 0)
 	{
 		std::cout << "Menu:\n";
-		std::cout << "1 - Add race";
+		std::cout << "1 - Add race\n";
 		std::cout << "2 - Add new owner\n";
 		std::cout << "3 - Add new jockey\n";
 		std::cout << "0 - EXIT\n";
@@ -222,7 +228,7 @@ void UpdateForOwner()
 	while (choice != 0)
 	{
 		std::cout << "Menu:\n";
-		std::cout << "1 - Update horse";
+		std::cout << "1 - Update horse\n";
 		std::cout << "2 - Update your info\n";
 		std::cout << "0 - EXIT\n";
 
@@ -320,7 +326,11 @@ void SelectForOwner()
 		case 3:
 		{
 			auto owner = GetOwnerByIdentityId(user.Id);
-			auto info1 = GetBestHorse(owner.Id);
+			Horse info1 = GetBestHorse(owner.Id);
+			if (info1.Id == -1) {
+				cout << "you have no horses\n";
+				break;
+			}
 			PrintHorseInfo(info1);
 			break;
 		}
@@ -328,6 +338,10 @@ void SelectForOwner()
 		{
 			auto owner = GetOwnerByIdentityId(user.Id);
 			auto info2 = GetHorsesByOwnerId(owner.Id);
+			if (info2.size() == 0) {
+				cout << "you have no horses\n";
+				break;
+			}
 			for (auto h : info2)
 			{
 				PrintHorseInfo(h);
@@ -433,8 +447,7 @@ void GetInfoAndAddJockey()
 
 	std::cout << "Enter email:\n";
 	std::cin >> email;
-	std::cout << "Enter password:\n";
-	std::cin >> password;
+	password = PromptPasswordRegistration();
 
 	if (RegisterNewUser(email, password, (Role)2, &session) != Result::NO_ERROR) {
 		std::cerr << "Registration error!\n";
@@ -456,7 +469,7 @@ void GetInfoAndAddJockey()
 
 void GetInfoAndUpdateOwner(int ownerId)
 {
-	Owner owner = GetOwnerByIdentityId(ownerId);
+	Owner owner = GetOwnerInfo(ownerId);
 
 	std::cout << "Enter name:\n";
 	std::cin >> owner.Name;
@@ -476,10 +489,9 @@ void GetInfoAndAddOwner()
 
 	std::cout << "Enter email:\n";
 	std::cin >> email;
-	std::cout << "Enter password:\n";
-	std::cin >> password;
+	password = PromptPasswordRegistration();
 
-	if (RegisterNewUser(email, password, (Role)2, &session) != Result::NO_ERROR) {
+	if (RegisterNewUser(email, password, (Role)1, &session) != Result::NO_ERROR) {
 		std::cerr << "Registration error!\n";
 		return;
 	}
@@ -497,12 +509,12 @@ void GetInfoAndAddOwner()
 
 void GetInfoAndUpdateRace(int raceId)
 {
-	auto raceRecord = GetRaceRecordById(raceId);
+	auto race = GetRaceById(raceId);
 
 	std::cout << "Enter date:\n";
-	std::cin >> raceRecord.race->Date;
+	std::cin >> race.Date;
 
-	UpdateRace(*raceRecord.race);
+	UpdateRace(race);
 }
 
 void GetInfoAndAddRace()
@@ -565,4 +577,19 @@ void GetInfoAndAddHorse()
 	std::cin >> horse.Price;
 
 	Add(horse);
+}
+
+void GetInfoAndAddAdmin()
+{
+	UserSession session;
+	std::string email, password;
+
+	std::cout << "Enter email:\n";
+	std::cin >> email;
+	password = PromptPasswordRegistration();
+
+	if (RegisterNewUser(email, password, (Role)3, &session) != Result::NO_ERROR) {
+		std::cerr << "Registration error!\n";
+		return;
+	}
 }

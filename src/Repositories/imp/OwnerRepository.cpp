@@ -1,139 +1,83 @@
 #include "../OwnerRepository.h"
-#include "sqlite3.h"
+#include "../../sqlite/sqlite3.h"
 #include "../../DBManagment/ConnectionKeeper.h"
 #include <string>
 #include <string.h>
+#include <iostream>
+#include <optional>
 
-static int callback(void* out_param, int argc, char** argv, char** azColName)
-{
-	std::vector<Horse>* out_horses = (std::vector<Horse>*)out_param;
-
-	for (int i = 0; i < argc; i += 10)
-	{
-		Horse horse;
-		if (strcmp(azColName[i], "Id") == 0)
-		{
-			horse.Id = strtol(argv[i], nullptr, 10);
-		}
-		if (strcmp(azColName[i + 1], "Nickname") == 0)
-		{
-			horse.Nickname = std::string(argv[i + 1]);
-		}
-		if (strcmp(azColName[i + 2], "Age") == 0)
-		{
-			horse.Age = strtol(argv[i + 2], nullptr, 10);
-		}
-		if (strcmp(azColName[i + 3], "Experience") == 0)
-		{
-			horse.Experience = strtod(argv[i + 3], nullptr);
-		}
-
-		if (strcmp(azColName[i + 4], "Price") == 0)
-		{
-			horse.Price = strtod(argv[i + 4], nullptr);
-		}
-		if (strcmp(azColName[i + 5], "OwnerId") == 0)
-		{
-			horse.OwnerId = strtol(argv[i + 5], nullptr, 10);
-			horse.owner = new Owner;
-			horse.owner->Id = horse.OwnerId;
-		}
-		if (strcmp(azColName[i + 6], "Name") == 0)
-		{
-			horse.owner->Name= std::string(argv[i + 6]);
-		}
-		if (strcmp(azColName[i + 7], "YearOfBirth") == 0)
-		{
-			horse.owner->YearOfBirth = strtod(argv[i + 7], nullptr);
-		}
-
-		if (strcmp(azColName[i + 8], "Address") == 0)
-		{
-			horse.owner->Address = std::string(argv[i + 8]);
-		}
-
-		if (strcmp(azColName[i + 9], "IdentityId") == 0)
-		{
-			horse.owner->IdentityId = strtod(argv[i + 9], nullptr);
-		}
-		out_horses->push_back(horse);
-	}
-
-	return 0;
-}
-
-static int callback_Owner(void* out_param, int argc, char** argv, char** azColName)
-{
-	Owner* out_owner = (Owner*)out_param;
-
-	if (argc == 0) 
-	{
-		out_owner = nullptr;
-		return 0;
-	}
-
-	for (int i = 0; i < argc; i += 6)
-	{
-		if (strcmp(azColName[i], "Id") == 0)
-		{
-			out_owner->Id = strtol(argv[i], nullptr, 10);
-		}
-		if (strcmp(azColName[i + 1], "Name") == 0)
-		{
-			out_owner->Name = std::string(argv[i + 1]);
-		}
-		if (strcmp(azColName[i + 2], "YearOfBirth") == 0)
-		{
-			out_owner->YearOfBirth = strtol(argv[i + 2], nullptr, 10);
-		}
-		if (strcmp(azColName[i + 3], "Address") == 0)
-		{
-			out_owner->Address = std::string(argv[i + 3]);
-		}
-		if (strcmp(azColName[i + 4], "IdentityId") == 0)
-		{
-			out_owner->IdentityId = strtol(argv[i + 4], nullptr, 10);
-		}
-	}
-
-	return 0;
-}
-
-
-std::vector<Horse> GetHorsesByOwnerId(int OwnerId) 
+std::vector<Horse> GetHorsesByOwnerId(int ownerId)
 {
 	std::vector<Horse> horses;
 	std::string query = "SELECT \
-						 h.Id, \
-						 h.Nickname, \
-						 h.Age, \
-						 h.Experience, \
-						 h.Price, \
-						 h.OwnerId, \
-						 o.Name, \
-						 o.YearOfBirth, \
-						 o.Address, \
-						 o.IdentityId \
-						 FROM Horse AS h \
-							JOIN Owner AS o ON h.OwnerId = o.Id \
-							WHERE o.Id = ";
-
-	std::string query_appended = query.append(std::to_string(OwnerId));
+                         h.Id, \
+                         h.Nickname, \
+                         h.Age, \
+                         h.Experience, \
+                         h.Price, \
+                         h.OwnerId, \
+                         o.Name, \
+                         o.YearOfBirth, \
+                         o.Address, \
+                         o.IdentityId \
+                         FROM Horse AS h \
+                            JOIN Owner AS o ON h.OwnerId = o.Id \
+                         WHERE o.Id = ?";
 
 	sqlite3* db = GetConnection();
 
-	char* zErrMsg = 0;
+	sqlite3_stmt* stmt;
+	int rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+	if (rc != SQLITE_OK)
+	{
+		std::cerr << "Error preparing SELECT statement for Horses: " << sqlite3_errmsg(db) << std::endl;
+		return horses;
+	}
 
-	int rc = sqlite3_exec(db, query_appended.c_str(), callback, &horses, &zErrMsg);
+	sqlite3_bind_int(stmt, 1, ownerId);
+
+	rc = sqlite3_step(stmt);
+
+	while (rc == SQLITE_ROW)
+	{
+		Horse horse;
+		horse.Id = sqlite3_column_int(stmt, 0);
+		horse.Nickname = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+		horse.Age = sqlite3_column_int(stmt, 2);
+		horse.Experience = sqlite3_column_double(stmt, 3);
+		horse.Price = sqlite3_column_double(stmt, 4);
+		horse.OwnerId = sqlite3_column_int(stmt, 5);
+		horse.owner = new Owner;
+		horse.owner->Id = horse.OwnerId;
+		horse.owner->Name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 6));
+		horse.owner->YearOfBirth = sqlite3_column_int(stmt, 7);
+		horse.owner->Address = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 8));
+		horse.owner->IdentityId = sqlite3_column_int(stmt, 9);
+
+		horses.push_back(horse);
+		rc = sqlite3_step(stmt);
+	}
+
+	if (rc != SQLITE_DONE)
+	{
+		std::cerr << "Error executing SELECT statement: " << sqlite3_errmsg(db) << std::endl;
+	}
+
+	sqlite3_finalize(stmt);
 
 	return horses;
 }
 
 Horse GetBestHorse(int OwnerId) {
-	auto horces = GetHorsesByOwnerId(OwnerId);
-	Horse answer = horces[0];
+	auto horses = GetHorsesByOwnerId(OwnerId);
+	Horse answer;
+	if (horses.size() == 0) {
+		answer.Id = -1;
+		return answer;
+	}
+	answer = horses[0];
 
-	for(auto h : horces)
+	for(auto h : horses)
 	{
 		if (h.Experience > answer.Experience) {
 			answer = h;
@@ -143,77 +87,141 @@ Horse GetBestHorse(int OwnerId) {
 	return answer;
 }
 
-int Update(Owner owner) 
+int Update(Owner owner)
 {
-	std::string query = "UPDATE Owner SET Name = '";
-
-	std::string query_appended = query
-		.append(owner.Name)
-		.append("', YearOfBirth = ")
-		.append(std::to_string(owner.YearOfBirth))
-		.append(", Address = '")
-		.append(owner.Address)
-		.append("' WHERE Id = ")
-		.append(std::to_string(owner.Id));
+	std::string query = "UPDATE Owner SET Name = ?, YearOfBirth = ?, Address = ? WHERE Id = ?";
 
 	sqlite3* db = GetConnection();
 
-	char* zErrMsg = 0;
+	sqlite3_stmt* stmt;
+	int rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+	if (rc != SQLITE_OK)
+	{
+		std::cerr << "Error preparing UPDATE statement for Owner: " << sqlite3_errmsg(db) << std::endl;
+		return rc;
+	}
 
-	int rc = sqlite3_exec(db, query_appended.c_str(), nullptr, 0, &zErrMsg);
+	sqlite3_bind_text(stmt, 1, owner.Name.c_str(), -1, SQLITE_TRANSIENT);
+	sqlite3_bind_int(stmt, 2, owner.YearOfBirth);
+	sqlite3_bind_text(stmt, 3, owner.Address.c_str(), -1, SQLITE_TRANSIENT);
+	sqlite3_bind_int(stmt, 4, owner.Id);
 
+	rc = sqlite3_step(stmt);
+	if (rc != SQLITE_DONE)
+	{
+		std::cerr << "Error executing UPDATE statement for Owner: " << sqlite3_errmsg(db) << std::endl;
+	}
+
+	sqlite3_finalize(stmt);
+	if (rc == SQLITE_DONE)
+		rc = 0;
 	return rc;
 }
 
-Owner GetOwnerInfo(int ownerId) 
+Owner GetOwnerInfo(int ownerId)
 {
 	Owner owner;
-	std::string query = "SELECT * FROM Owner AS o WHERE o.Id = ";
-
-	std::string query_appended = query.append(std::to_string(ownerId));
+	std::string query = "SELECT * FROM Owner AS o WHERE o.Id = ?";
 
 	sqlite3* db = GetConnection();
 
-	char* zErrMsg = 0;
+	sqlite3_stmt* stmt;
+	int rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+	if (rc != SQLITE_OK)
+	{
+		std::cerr << "Error preparing SELECT statement for Owner: " << sqlite3_errmsg(db) << std::endl;
+		return owner;
+	}
 
-	int rc = sqlite3_exec(db, query_appended.c_str(), callback_Owner, &owner, &zErrMsg);
+	sqlite3_bind_int(stmt, 1, ownerId);
+
+	rc = sqlite3_step(stmt);
+
+	while (rc == SQLITE_ROW)
+	{
+		owner.Id = sqlite3_column_int(stmt, 0);
+		owner.Name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+		owner.YearOfBirth = sqlite3_column_int(stmt, 2);
+		owner.Address = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
+		owner.IdentityId = sqlite3_column_int(stmt, 4);
+
+		rc = sqlite3_step(stmt);
+	}
+
+	if (rc != SQLITE_DONE)
+	{
+		std::cerr << "Error executing SELECT statement: " << sqlite3_errmsg(db) << std::endl;
+	}
+
+	sqlite3_finalize(stmt);
 
 	return owner;
 }
 
-Owner GetOwnerByIdentityId(int identityId) 
+Owner GetOwnerByIdentityId(int identityId)
 {
 	Owner owner;
-	std::string query = "SELECT * FROM Owner AS o WHERE o.IdentityId = ";
-
-	std::string query_appended = query.append(std::to_string(identityId));
+	std::string query = "SELECT * FROM Owner AS o WHERE o.IdentityId = ?";
 
 	sqlite3* db = GetConnection();
 
-	char* zErrMsg = 0;
+	sqlite3_stmt* stmt;
+	int rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+	if (rc != SQLITE_OK)
+	{
+		std::cerr << "Error preparing SELECT statement for Owner: " << sqlite3_errmsg(db) << std::endl;
+		return owner;
+	}
 
-	int rc = sqlite3_exec(db, query_appended.c_str(), callback_Owner, &owner, &zErrMsg);
+	sqlite3_bind_int(stmt, 1, identityId);
+
+	rc = sqlite3_step(stmt);
+
+	if (rc == SQLITE_ROW)
+	{
+		owner.Id = sqlite3_column_int(stmt, 0);
+		owner.Name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+		owner.YearOfBirth = sqlite3_column_int(stmt, 2);
+		owner.Address = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
+		owner.IdentityId = sqlite3_column_int(stmt, 4);
+	}
+	else 
+	{
+		std::cerr << "Error executing SELECT statement for Owner: " << sqlite3_errmsg(db) << std::endl;
+	}
+	
+	sqlite3_finalize(stmt);
 
 	return owner;
 }
 
-int AddOwner(Owner owner) 
+int AddOwner(Owner owner)
 {
 	sqlite3* db = GetConnection();
 
-	std::string command = "INSERT INTO Owner (Name, YearOfBirth, Address, IdentityId) VALUES ('";
-	std::string appended_command = command
-		.append(owner.Name)
-		.append("', ")
-		.append(std::to_string(owner.YearOfBirth))
-		.append(", '")
-		.append(owner.Address)
-		.append("', ")
-		.append(std::to_string(owner.IdentityId))
-		.append(")");
+	std::string query = "INSERT INTO Owner (Name, YearOfBirth, Address, IdentityId) VALUES (?, ?, ?, ?)";
 
-	char* zErrMsg = 0;
+	sqlite3_stmt* stmt;
+	int rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+	if (rc != SQLITE_OK)
+	{
+		std::cerr << "Error preparing INSERT statement for Owner: " << sqlite3_errmsg(db) << std::endl;
+		return rc;
+	}
 
-	int rc = sqlite3_exec(db, appended_command.c_str(), nullptr, 0, &zErrMsg);
+	sqlite3_bind_text(stmt, 1, owner.Name.c_str(), -1, SQLITE_TRANSIENT);
+	sqlite3_bind_int(stmt, 2, owner.YearOfBirth);
+	sqlite3_bind_text(stmt, 3, owner.Address.c_str(), -1, SQLITE_TRANSIENT);
+	sqlite3_bind_int(stmt, 4, owner.IdentityId);
+
+	rc = sqlite3_step(stmt);
+	if (rc != SQLITE_DONE)
+	{
+		std::cerr << "Error executing INSERT statement for Owner: " << sqlite3_errmsg(db) << std::endl;
+	}
+
+	sqlite3_finalize(stmt);
+	if (rc == SQLITE_DONE)
+		rc = 0;
 	return rc;
 }
