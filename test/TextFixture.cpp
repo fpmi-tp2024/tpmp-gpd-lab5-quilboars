@@ -99,10 +99,10 @@ TEST_F(RepositoriesTests, HorseRepositoryDeleteTest) {
 }
 
 TEST_F(RepositoriesTests, HorseRepositoryUpdateTest) {
-	auto horse = GetHorse(1);
-	EXPECT_EQ(horse.Id, 1);
+	auto horse = GetHorse(2);
+	EXPECT_EQ(horse.Id, 2);
 
-	std::string sql = "SELECT * FROM Horse WHERE Id = 1";
+	std::string sql = "SELECT * FROM Horse WHERE Id = 2";
 	auto info1 = ExecuteSQL(sql);
 	horse.Nickname = "a";
 	Update(horse);
